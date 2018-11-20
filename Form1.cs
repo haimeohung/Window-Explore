@@ -30,6 +30,7 @@ namespace BT4
         private bool IsCutting = false;
         private bool IsFolder = false;
         private bool IsListView = false;
+        private bool IsRename = false;
         private ListViewItem itemPaste;
         private string pathFolder;
         private string pathFile;
@@ -118,10 +119,14 @@ namespace BT4
                 }
                 else
                 {
-                    MessageBox.Show("Not Found");
+                    Message ms = new Message("Folder not found");
+                    ms.Show();
                 }
             }
-            catch (Exception) { MessageBox.Show("Access Denied"); }
+            catch (Exception) {
+                Message ms = new Message("Acces Denied" + Environment.NewLine + "Please run as adminstrator");
+                ms.Show();
+            }
 
         }
         private void listView1_KeyPress(object sender, KeyPressEventArgs e)
@@ -149,10 +154,14 @@ namespace BT4
                 }
                 else
                 {
-                    MessageBox.Show("Not Found");
+                    Message ms = new Message("Folder not found");
+                    ms.Show();
                 }
             }
-            catch (Exception) { MessageBox.Show("Access Denied"); }
+            catch (Exception) {
+                Message ms = new Message("Acces Denied" + Environment.NewLine + "Please run as adminstrator");
+                ms.Show();
+            }
 
         }
         #endregion
@@ -227,9 +236,9 @@ namespace BT4
                 }
 
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                ex.ToString();
+                
             }
         }
 
@@ -237,8 +246,8 @@ namespace BT4
         //Event toolstrip
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            DialogResult dlr = MessageBox.Show("Are you sure?", "Message", MessageBoxButtons.YesNo);
-            if (dlr == DialogResult.Yes) this.Close();
+            DialogResult dlr = MessageBox.Show("Do you want to exit ?", "Message", MessageBoxButtons.YesNo);
+            if (dlr == DialogResult.Yes) Application.Exit();
 
         }
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
@@ -281,7 +290,9 @@ namespace BT4
             }
             catch (Exception)
             {
-                MessageBox.Show("Acess Denied");
+                Message ms = new Message("Acces Denied" + Environment.NewLine + "Please run as adminstrator");
+                ms.Show();
+
             }
         }
         #endregion
@@ -318,7 +329,8 @@ namespace BT4
             }
             catch (Exception)
             {
-                MessageBox.Show("Message", "Link not found!");
+                Message ms = new Message("Path not found");
+                ms.Show();
             }
 
         }
@@ -344,6 +356,7 @@ namespace BT4
             }          
             btn_paste.Enabled = true;
             item_paste.Enabled = true;
+            ct_paste.Enabled = true;
         }
         private void btn_copy_Click(object sender, EventArgs e)
         {
@@ -366,6 +379,7 @@ namespace BT4
             }           
             btn_paste.Enabled = true;
             item_paste.Enabled = true;
+            ct_paste.Enabled = true;
         }
         private void btn_paste_Click(object sender, EventArgs e)
         {
@@ -412,10 +426,12 @@ namespace BT4
                 }
                 btn_paste.Enabled = false;
                 item_paste.Enabled = false;
+                ct_paste.Enabled = false;
                 item_refresh_Click(sender, e);
             }
             catch (Exception) {
-                MessageBox.Show("Access Denied");
+                Message ms = new Message("Acces Denied" + Environment.NewLine + "Please run as adminstrator");
+                ms.Show();
             }
         }
         private void DirectoryCopy(string pathSourece, string pathDestination)
@@ -468,6 +484,13 @@ namespace BT4
         }
         private void timer1_Tick(object sender, EventArgs e)
         {
+            lblTime.Text = (DateTime.Now.Hour < 10 ? "0" + DateTime.Now.Hour.ToString() : DateTime.Now.Hour.ToString())
+                + ":" + (DateTime.Now.Minute < 10 ? "0" + DateTime.Now.Minute.ToString() : DateTime.Now.Minute.ToString()) 
+                + ":" + (DateTime.Now.Second < 10 ? "0" + DateTime.Now.Second.ToString() : DateTime.Now.Second.ToString()) 
+                + " " + DateTime.Now.DayOfWeek.ToString() + ", " + (DateTime.Now.Day < 10 ? "0" 
+                + DateTime.Now.Day.ToString() : DateTime.Now.Day.ToString()) + "/" + (DateTime.Now.Month < 10 ? "0" 
+                + DateTime.Now.Month.ToString() : DateTime.Now.Month.ToString()) + "/" + DateTime.Now.Year;
+
             if (txt_path.Text != "")
             {
                 btn_up.Enabled = true;
@@ -558,18 +581,8 @@ namespace BT4
         }      
         private void item_view_Click_1(object sender, EventArgs e)
         {
-            //richTextBox1.Clear();
-            //foreach (string i in path_stack)
-            //{
-            //    richTextBox1.Text += i + Environment.NewLine;
-
-            //}
-            //richTextBox2.Clear();
-            //foreach (string i in path_stack2)
-            //{
-            //    richTextBox2.Text += i + Environment.NewLine;
-
-            //}
+            Message ms = new Message("This function is not supported by me");
+            ms.Show();
         }
         private void ct_open_Click(object sender, EventArgs e)
         {
@@ -601,6 +614,46 @@ namespace BT4
                 }
             }
             catch (Exception) { }
+        }
+
+        private void renameToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            IsRename = true;
+            listView1.SelectedItems[0].BeginEdit();
+        }
+
+        private void listView1_AfterLabelEdit(object sender, LabelEditEventArgs e)
+        {
+            try
+            {
+                ListViewItem item = listView1.FocusedItem;
+                string path = item.SubItems[4].Text;
+                if (e.Label == null) return;
+                FileInfo fi = new FileInfo(path);
+                if (fi.Exists)
+                {
+                    FileSystem.RenameFile(path, e.Label + item.SubItems[1].Text);
+                    item_refresh_Click(sender, e);
+
+                }
+                else
+                {
+                    FileSystem.RenameDirectory(path, e.Label);
+                    item_refresh_Click(sender, e);
+                    e.CancelEdit = true;
+                    IsRename = false;
+
+
+                }
+            }
+            catch(IOException)
+            {
+                //MessageBox.Show("Acces Denied");
+            }
+            catch(Exception)
+            {
+
+            }
         }
     }
 }
