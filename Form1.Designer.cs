@@ -87,7 +87,8 @@
             this.ct_copy = new System.Windows.Forms.ToolStripMenuItem();
             this.ct_paste = new System.Windows.Forms.ToolStripMenuItem();
             this.ct_rename = new System.Windows.Forms.ToolStripMenuItem();
-            this.refreshToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.ct_refresh = new System.Windows.Forms.ToolStripMenuItem();
+            this.ct_delete = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.toolStrip1.SuspendLayout();
             this.toolStrip2.SuspendLayout();
@@ -197,6 +198,7 @@
             this.viewToolStripMenuItem.Name = "viewToolStripMenuItem";
             this.viewToolStripMenuItem.Size = new System.Drawing.Size(47, 21);
             this.viewToolStripMenuItem.Text = "View";
+            this.viewToolStripMenuItem.Click += new System.EventHandler(this.item_view_Click_1);
             // 
             // largerIconToolStripMenuItem
             // 
@@ -445,7 +447,6 @@
             this.txt_path.Name = "txt_path";
             this.txt_path.Size = new System.Drawing.Size(500, 40);
             this.txt_path.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.txt_path_KeyPress);
-            this.txt_path.TextChanged += new System.EventHandler(this.txt_path_TextChanged);
             // 
             // btn_Go
             // 
@@ -460,6 +461,7 @@
             // 
             // statusStrip1
             // 
+            this.statusStrip1.BackColor = System.Drawing.Color.White;
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.status_bar,
             this.lblTime});
@@ -569,30 +571,31 @@
             this.ct_cut,
             this.ct_copy,
             this.ct_paste,
+            this.ct_delete,
             this.ct_rename,
-            this.refreshToolStripMenuItem});
+            this.ct_refresh});
             this.contextMenuStrip1.Name = "contextMenuStrip1";
-            this.contextMenuStrip1.Size = new System.Drawing.Size(118, 136);
+            this.contextMenuStrip1.Size = new System.Drawing.Size(118, 158);
             // 
             // ct_open
             // 
             this.ct_open.Enabled = false;
             this.ct_open.Name = "ct_open";
-            this.ct_open.Size = new System.Drawing.Size(117, 22);
+            this.ct_open.Size = new System.Drawing.Size(180, 22);
             this.ct_open.Text = "Open";
             this.ct_open.Click += new System.EventHandler(this.ct_open_Click);
             // 
             // ct_cut
             // 
             this.ct_cut.Name = "ct_cut";
-            this.ct_cut.Size = new System.Drawing.Size(117, 22);
+            this.ct_cut.Size = new System.Drawing.Size(180, 22);
             this.ct_cut.Text = "Cut";
             this.ct_cut.Click += new System.EventHandler(this.btn_cut_Click);
             // 
             // ct_copy
             // 
             this.ct_copy.Name = "ct_copy";
-            this.ct_copy.Size = new System.Drawing.Size(117, 22);
+            this.ct_copy.Size = new System.Drawing.Size(180, 22);
             this.ct_copy.Text = "Copy";
             this.ct_copy.Click += new System.EventHandler(this.btn_copy_Click);
             // 
@@ -600,23 +603,30 @@
             // 
             this.ct_paste.Enabled = false;
             this.ct_paste.Name = "ct_paste";
-            this.ct_paste.Size = new System.Drawing.Size(117, 22);
+            this.ct_paste.Size = new System.Drawing.Size(180, 22);
             this.ct_paste.Text = "Paste";
             this.ct_paste.Click += new System.EventHandler(this.btn_paste_Click);
             // 
             // ct_rename
             // 
             this.ct_rename.Name = "ct_rename";
-            this.ct_rename.Size = new System.Drawing.Size(117, 22);
+            this.ct_rename.Size = new System.Drawing.Size(180, 22);
             this.ct_rename.Text = "Rename";
             this.ct_rename.Click += new System.EventHandler(this.renameToolStripMenuItem_Click);
             // 
-            // refreshToolStripMenuItem
+            // ct_refresh
             // 
-            this.refreshToolStripMenuItem.Name = "refreshToolStripMenuItem";
-            this.refreshToolStripMenuItem.Size = new System.Drawing.Size(117, 22);
-            this.refreshToolStripMenuItem.Text = "Refresh";
-            this.refreshToolStripMenuItem.Click += new System.EventHandler(this.item_refresh_Click);
+            this.ct_refresh.Name = "ct_refresh";
+            this.ct_refresh.Size = new System.Drawing.Size(117, 22);
+            this.ct_refresh.Text = "Refresh";
+            this.ct_refresh.Click += new System.EventHandler(this.item_refresh_Click);
+            // 
+            // ct_delete
+            // 
+            this.ct_delete.Name = "ct_delete";
+            this.ct_delete.Size = new System.Drawing.Size(180, 22);
+            this.ct_delete.Text = "Delete";
+            this.ct_delete.Click += new System.EventHandler(this.deleteToolStripMenuItem_Click);
             // 
             // Form1
             // 
@@ -713,7 +723,8 @@
         private System.Windows.Forms.ToolStripMenuItem ct_copy;
         private System.Windows.Forms.ToolStripMenuItem ct_paste;
         private System.Windows.Forms.ToolStripMenuItem ct_rename;
-        private System.Windows.Forms.ToolStripMenuItem refreshToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem ct_refresh;
+        private System.Windows.Forms.ToolStripMenuItem ct_delete;
     }
 }
 

@@ -59,7 +59,7 @@
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(224, 63);
             this.label3.TabIndex = 2;
-            this.label3.Text = "All sources code have beed published on my git, you can see at:";
+            this.label3.Text = "All sources code have been published on my git, you can see at:";
             // 
             // linkLabel1
             // 
