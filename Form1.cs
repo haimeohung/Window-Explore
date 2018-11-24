@@ -21,7 +21,7 @@ namespace BT4
             timer1.Start();
             
         }
-
+        //
         #region static variable
         //For count number file & folder of selected node
         private int iFolder;
@@ -117,7 +117,7 @@ namespace BT4
                 //Get full path of focused item
                 string path = item.SubItems[4].Text;
                 FileInfo inf = new FileInfo(path);
-                //Run file, you don't need know what type of file
+                //Run file, you don't need to know what type of file
                 if (inf.Exists)
                 {
                     Process.Start(path);
@@ -285,12 +285,9 @@ namespace BT4
             {
                 //Count number item to check list view
                 if (listView1.SelectedItems.Count > 0)
-                {
-                    //Creat path to item
-                    string fullpath = treeView1.SelectedNode.FullPath;
-                    string selected_node_path = CreatPath(fullpath);
+                {                   
                     // Creat main path to main node in tree view
-                    selected_node_path += listView1.SelectedItems[0].SubItems[0].Text;
+                    string selected_node_path = listView1.SelectedItems[0].SubItems[4].Text;
                     //Check path type and delete it ... what an angry action !
                     if (listView1.SelectedItems[0].SubItems[1].Text.CompareTo("Folder") == 0)
                     {
@@ -576,7 +573,15 @@ namespace BT4
                 + " " + DateTime.Now.DayOfWeek.ToString() + ", " + (DateTime.Now.Day < 10 ? "0" 
                 + DateTime.Now.Day.ToString() : DateTime.Now.Day.ToString()) + "/" + (DateTime.Now.Month < 10 ? "0" 
                 + DateTime.Now.Month.ToString() : DateTime.Now.Month.ToString()) + "/" + DateTime.Now.Year;
-
+            if (listView1.Items.Count == 0)
+            {
+                background.Visible = true;
+            }
+            else
+            {
+                background.Visible = false;
+            }
+             
             if (txt_path.Text != "")
             {
                 btn_up.Enabled = true;
@@ -688,6 +693,22 @@ namespace BT4
             {
 
             }
+        }
+        //Update lbl count selected item(s) in status bar
+        private void listView1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (listView1.SelectedItems.Count > 0)
+            {
+                lbl_selected.Text = listView1.SelectedItems.Count + " item(s) selected";
+
+            }
+            else
+            {
+                lbl_selected.Text = "";
+
+            }
+
+
         }
         //
         #endregion
