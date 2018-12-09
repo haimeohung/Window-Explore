@@ -1,717 +1,421 @@
-﻿using Microsoft.VisualBasic.FileIO;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Data.SqlClient;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
-using System.IO;
-using System.Management;
-using System.Diagnostics;
 
-namespace BT4
+namespace BT6._1
 {
     public partial class Form1 : Form
-    {        
+    {
+        //database connection 's information
+        static String connString = @"Data Source=VTHCOMPUTER;Initial Catalog=Thongtinsinhvien;Integrated Security=True";
+        SqlConnection connection = new SqlConnection(connString);
+        //key of function: index = 0/Save, = 1/Add, = 2/Edit, = 3/Delete
+        int index;
+        //type: = 0/connect sql server, = 1/connect a text file in debug directory
+        int type;
+
         public Form1()
         {
             InitializeComponent();
-            timer1.Start();
-            
+        }
+        //Exit function
+        private void btn_Exit_Click(object sender, EventArgs e)
+        {
+            Application.Exit();
+        }
+        //Create and execute query
+        private SqlCommand open()
+        {
+            String sqlQuery = "select * from [Thongtinsinhvien].[dbo].[SINHVIEN]";
+            SqlCommand command = new SqlCommand(sqlQuery, connection);
+            return command;
         }
         //
-        #region static variable
-        //For count number file & folder of selected node
-        private int iFolder;
-        private int iFile;
-        //2 stack for up, back and forward function 
-        private Stack<string> path_stack = new Stack<string>();
-        private Stack<string> path_stack2 = new Stack<string>();    
-        //Flags for cut, copy and paste function
-        private bool IsCopying = false;
-        private bool IsCutting = false;
-        private bool IsFolder = false;
-        private bool IsListView = false; 
-        //Temp variable
-        private ListViewItem itemPaste;
-        private string path_Folder; 
-        private string path_File;
-        private string path_Source;
-        private string path_Destination;
-        #endregion
-        //
-        #region Event list view
-        //
-        private void AddListView(TreeNode root)
+        private void insert()
         {
-            
-            string fullpath = root.FullPath;
-            string selected_node_path = CreatPath(fullpath);
-            //Before you add new list view, you must clear previous list view
-            listView1.Items.Clear();
-            //Get list infomation of folder at selected_node_path -> Add list view
-            DirectoryInfo[] subfolder_info = new DirectoryInfo(selected_node_path).GetDirectories();
-            AddFolderListView(subfolder_info);
-            //Get list infomation of file at selected_node_path -> Add list view
-            FileInfo[] subfile_info = new DirectoryInfo(selected_node_path).GetFiles();
-            AddFileListView(subfile_info);
-        }
-        //
-        private int IconListView(string s)
-        {
-            //Sorry about this
-            if (s == ".png") return 4;
-            if (s == ".ppt" || s == ".pptx") return 3;
-            if (s == ".doc" || s == ".docx" | s == ".txt") return 5;
-            if (s == ".rar" || s == ".zip") return 6;
-            if (s == ".mp3") return 2;
-            return 1;
-        }
-        //
-        private void AddFileListView(FileInfo[] subfile_info)
-        {
-            iFile = 0;
-            foreach (var file in subfile_info)
-            {
-                //An item have 5 column: name | type | size | date modify | full path
-                string[] value = new string[5];
-                value[0] = file.Name.ToString();
-                value[1] = file.Extension;
-                value[2] = (file.Length / 1024).ToString();
-                value[3] = file.LastWriteTime.ToString();
-                value[4] = file.FullName.ToString();
-                ListViewItem item1 = new ListViewItem(value);
-                item1.ImageIndex = IconListView(value[1]);
-                iFile++;
-                listView1.Items.Add(item1);
-            }
-        }
-        //
-        private void AddFolderListView(DirectoryInfo[] subfolder_info)
-        {
-            iFolder = 0;
-            //An item have 5 column: name | type | size | date modify | full path
-            foreach (var item in subfolder_info)
-            {
-                string[] value = new string[5];
-                value[0] = item.Name.ToString();
-                value[1] = "Folder";
-                value[2] = "N/A";
-                value[3] = item.LastWriteTime.ToString();
-                value[4] = item.FullName.ToString();
-                ListViewItem item1 = new ListViewItem(value);
-                item1.ImageIndex = 0;
-                iFolder++;
-                listView1.Items.Add(item1);
-
-            }
-        }
-        //Event double click an item in listview
-        private void listView1_MouseDoubleClick(object sender, MouseEventArgs e) 
-        {
+            String sqlQuery = "insert into [Thongtinsinhvien].[dbo].[SINHVIEN] values (@masv, @hoten, @ngsinh)";
+            SqlCommand command = new SqlCommand(sqlQuery, connection);
+            command.Parameters.Add("@masv", SqlDbType.Char, 4).Value = txt_masv.Text.ToString();
+            command.Parameters.Add("@hoten", SqlDbType.VarChar, 40).Value = txt_ten.Text.ToString();
+            command.Parameters.Add("@ngsinh", SqlDbType.SmallDateTime, 4).Value = txt_ngsinh.Text.ToString();
             try
             {
-                ListViewItem item = listView1.FocusedItem;
-                //Get full path of focused item
-                string path = item.SubItems[4].Text;
-                FileInfo inf = new FileInfo(path);
-                //Run file, you don't need to know what type of file
-                if (inf.Exists)
-                {
-                    Process.Start(path);
-                    return;
-                }
-                //Open folder, you just plus folder name into current path
-                DirectoryInfo inf2 = new DirectoryInfo(path + "\\");
-                if (inf2.Exists)
-                {
-                    txt_path.Text = path + "\\";
-                    path_stack.Push(txt_path.Text);
-                    listView1.Items.Clear();
-                    DirectoryInfo[] subfolder_info = new DirectoryInfo(path).GetDirectories();
-                    AddFolderListView(subfolder_info);
-                    FileInfo[] subfile_info = new DirectoryInfo(path).GetFiles();
-                    AddFileListView(subfile_info);
-                    status_bar.Text = iFolder + " Folder(s) " + iFile + " File(s)";
-
-                }
-                else
-                {
-                    Message ms = new Message("Folder not found");
-                    ms.Show();
-                }
+                command.ExecuteNonQuery();
             }
-            catch (Exception) {
-                Message ms = new Message("Acces Denied" + Environment.NewLine + "Please run as adminstrator");
-                ms.Show();
+            catch (Exception)
+            {
+                MessageBox.Show("Key combination!");
             }
-
         }
-        //Event enter an item in listview, it have same event double click
-        private void listView1_KeyPress(object sender, KeyPressEventArgs e)
-        {
+        //
+        private void delete()
+        {           
+            int CurrentIndex = dataGridView1.CurrentRow.Index;
+            string id = dataGridView1.Rows[CurrentIndex].Cells[0].Value.ToString();
+            String sqlQuery = "delete from [Thongtinsinhvien].[dbo].[SINHVIEN] where MASV = '" + id + "'";
+            SqlCommand command = new SqlCommand(sqlQuery, connection);
             try
             {
-                ListViewItem item = listView1.FocusedItem;
-                string path = item.SubItems[4].Text;
-                FileInfo inf = new FileInfo(path);
-                if (inf.Exists)
-                {
-                    Process.Start(path);
-                    return;
-                }
-                DirectoryInfo inf2 = new DirectoryInfo(path + "\\");
-                if (inf2.Exists)
-                {
-                    txt_path.Text = path + "\\";
-                    path_stack.Push(txt_path.Text);
-                    listView1.Items.Clear();
-                    DirectoryInfo[] subfolder_info = new DirectoryInfo(path).GetDirectories();
-                    AddFolderListView(subfolder_info);
-                    FileInfo[] subfile_info = new DirectoryInfo(path).GetFiles();
-                    AddFileListView(subfile_info);
-                    status_bar.Text = iFolder + " Folder(s) " + iFile + " File(s)";
-                }
-                else
-                {
-                    Message ms = new Message("Folder not found");
-                    ms.Show();
-                }
-            }
-            catch (Exception) {
-                Message ms = new Message("Acces Denied" + Environment.NewLine + "Please run as adminstrator");
-                ms.Show();
-            }
-
-        }
-        //
-        #endregion
-        //
-        #region Event tree view
-        //
-        private void AddTreeView(TreeNode root)
-        {
-            string selected_node_path = "";
-            string fullpath = root.FullPath;
-            selected_node_path = CreatPath(fullpath);
-            if (Directory.Exists(selected_node_path))
-            {
-                string[] sub_folder_path = Directory.GetDirectories(selected_node_path);
-                root.Nodes.Clear();
-                //Any path like that: "C:\Users\..., so you must split path and save node_name
-                foreach (var folder in sub_folder_path)
-                {
-                    string[] ss = folder.Split('\\');
-                    TreeNode subnode = new TreeNode(ss[ss.Length - 1]);
-                    root.Nodes.Add(subnode);
-                }
-            }
-            root.Expand();
-        }
-        //
-        private int IconTreeView(string s)
-        {
-            int tmp = 1;
-            if (s == "3") tmp = 2;
-            if (s == "4") tmp = 1;
-            if (s == "5") tmp = 3;
-            return tmp;
-        }
-        //Event click any node on tree view
-        private void treeView1_AfterSelect(object sender, TreeViewEventArgs e)
-        {
-            try
-            {                
-                TreeNode selected_node = e.Node;              
-                string selected_node_path = "";
-                string fullpath = selected_node.FullPath;
-                selected_node_path = CreatPath(fullpath);
-                //Add path to stack
-                path_stack.Push(selected_node_path);   
-                //Display on screen
-                txt_path.Text = selected_node_path;
-                if (Directory.Exists(selected_node_path))
-                {
-                    string[] sub_folder = Directory.GetDirectories(selected_node_path);
-                    selected_node.Nodes.Clear();
-                    foreach (var folder in sub_folder)
-                    {
-                        string[] split_folder = folder.Split('\\');
-                        TreeNode node = new TreeNode(split_folder[split_folder.Length - 1]);
-                        selected_node.Nodes.Add(node);
-
-                    }
-                    selected_node.Expand();
-                    //Update list view
-                    listView1.Items.Clear();
-                    DirectoryInfo[] sub_folder_info = new DirectoryInfo(selected_node_path).GetDirectories();
-                    AddFolderListView(sub_folder_info);                   
-                    FileInfo[] sub_file_info = new DirectoryInfo(selected_node_path).GetFiles();
-                    AddFileListView(sub_file_info);
-                    //Update status bar
-                    status_bar.Text = iFolder + " Folder(s) " + iFile + " File(s)";
-                    
-                }
+                command.ExecuteNonQuery();
 
             }
             catch (Exception)
             {
-                
+                //MessageBox.Show("Delete record failed!");
             }
         }
         //
-        #endregion
-        //
-        #region toolstrip
-        //
-        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            DialogResult dlr = MessageBox.Show("Do you want to exit ?", "Message", MessageBoxButtons.YesNo);
-            if (dlr == DialogResult.Yes) Application.Exit();
-
-        }
-        //
-        private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            About_me fr = new About_me();
-            fr.ShowDialog();
-        }
-        //Delete function
-        private void deleteToolStripMenuItem_Click(object sender, EventArgs e)
-        {
+        private void update()
+        {       
+            int CurrentIndex = dataGridView1.CurrentRow.Index;
+            string id = dataGridView1.Rows[CurrentIndex].Cells[0].Value.ToString();
+            String sqlQuery = "update [Thongtinsinhvien].[dbo].[SINHVIEN] set HOTEN = '" + txt_ten.Text.ToString() + "', NGSINH = '" + txt_ngsinh.Text.ToString() + 
+                "' where MASV = '" + id + "'";
+            SqlCommand command = new SqlCommand(sqlQuery, connection);
+            MessageBox.Show(sqlQuery);
             try
             {
-                //Count number item to check list view
-                if (listView1.SelectedItems.Count > 0)
-                {                   
-                    // Creat main path to main node in tree view
-                    string selected_node_path = listView1.SelectedItems[0].SubItems[4].Text;
-                    //Check path type and delete it ... what an angry action !
-                    if (listView1.SelectedItems[0].SubItems[1].Text.CompareTo("Folder") == 0)
-                    {
-                        if (Directory.Exists(selected_node_path))
-                        {                           
-                            Directory.Delete(selected_node_path, true);
-                        }
-                    }
-                    else
-                    {
-                        if (File.Exists(selected_node_path))
-                        {
-                            File.Delete(selected_node_path);
-                        }
-                    }
-                    //Update listview
-                    listView1.Items.Remove(listView1.Items[0]);
-                }
-                item_refresh.PerformClick();
+                command.ExecuteNonQuery();
             }
             catch (Exception)
             {
-                Message ms = new Message("Acces Denied" + Environment.NewLine + "Please run as adminstrator");
-                ms.Show();
-
+                MessageBox.Show("Update record failed!");
             }
-        }
-        //Ename function
-        private void renameToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            listView1.SelectedItems[0].BeginEdit();
         }
         //
-        #endregion
-        //
-        #region Event button
-        //Event enter path
-        private void btn_Go_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                if (txt_path.Text != "")
-                {
-                    FileInfo inf = new FileInfo(txt_path.Text.Trim());
-                    //Check path type
-                    if (inf.Exists)
-                    {
-                        System.Diagnostics.Process.Start(txt_path.Text.Trim());
-                        DirectoryInfo parent = inf.Directory;
-                        txt_path.Text = parent.FullName;
-                        return;
-
-                    }
-                    else
-                    {
-                        //Update list view
-                        listView1.Items.Clear();
-                        DirectoryInfo[] subfolder_info = new DirectoryInfo(txt_path.ToString()).GetDirectories();
-                        AddFolderListView(subfolder_info);
-                        FileInfo[] subfile_info = new DirectoryInfo(txt_path.ToString()).GetFiles();
-                        AddFileListView(subfile_info);
-                    }
-                }
-
-            }
-            catch (Exception)
-            {
-                Message ms = new Message("Path not found");
-                ms.Show();
-            }
-
-        }
-        //Cut function
-        private void btn_cut_Click(object sender, EventArgs e)
-        {            
-            IsCutting = true;
-            if (listView1.Focused)
-            {
-                IsListView = true;
-                itemPaste = listView1.FocusedItem;
-                itemPaste.ForeColor = Color.Gray;
-                if (itemPaste == null) return;
-                //Check cutting type: file or folder
-                if (itemPaste.SubItems[1].Text.Trim() == "Folder")
-                {
-                    IsFolder = true;
-                    path_Folder = itemPaste.SubItems[4].Text + "\\";
-                }
-                else
-                {
-                    IsFolder = false;
-                    path_File = itemPaste.SubItems[4].Text;
-                }
-            }
-          
-            btn_paste.Enabled = true;
-            item_paste.Enabled = true;
-            ct_paste.Enabled = true;
-        }
-        //Copy function, like as cut
-        private void btn_copy_Click(object sender, EventArgs e)
-        {
-            IsCopying = true;
-            if (listView1.Focused)
-            {
-                IsListView = true;
-                itemPaste = listView1.FocusedItem;
-                if (itemPaste == null) return;
-                //Check copying type: file or folder
-
-                if (itemPaste.SubItems[1].Text.Trim() == "Folder")
-                {
-                    IsFolder = true;
-                    path_Folder = itemPaste.SubItems[4].Text + "\\";
-                }
-                else
-                {
-                    IsFolder = false;
-                    path_File = itemPaste.SubItems[4].Text;
-                }
-            }           
-            btn_paste.Enabled = true;
-            item_paste.Enabled = true;
-            ct_paste.Enabled = true;
-        }
-        //Paste function
-        private void btn_paste_Click(object sender, EventArgs e)
+        private void Connect()
         {        
             try
-            {   
-                //Because of laziness, I have code paste function for list view
-                if (IsListView)
-                {
-                    //Check pasting type: file or folder
-                    if (IsFolder)
-                    {
-                        path_Source = path_Folder;
-                        path_Destination = txt_path.Text.Substring(0, txt_path.Text.Length-1) + "\\" +  itemPaste.SubItems[0].Text;
-                    }
-                    else
-                    {
-                        path_Source = path_File;
-                        path_Destination = txt_path.Text.Substring(0, txt_path.Text.Length - 1) + "\\" + itemPaste.SubItems[0].Text;
-                    }
-                }
-                //Check pasting type: copy or cut
-
-                if (IsCopying)
-                {
-                    if (IsFolder)
-                    {
-                        FileSystem.CopyDirectory(path_Source, path_Destination);
-                    }
-                    else
-                    {
-                        FileSystem.CopyFile(path_Source, path_Destination);
-                    }
-                    IsCopying = false;
-                }
-                if (IsCutting)
-                {
-                    if (IsFolder)
-                    {
-                        FileSystem.MoveDirectory(path_Source, path_Destination);
-                    }
-                    else
-                    {
-                        FileSystem.MoveFile(path_Source, path_Destination);
-                    }
-                    IsCutting = false;
-                }
-                btn_paste.Enabled = false;
-                item_paste.Enabled = false;
-                ct_paste.Enabled = false;
-                item_refresh_Click(sender, e);
+            {
+                connection.Open();
             }
-            catch (Exception) {
-                Message ms = new Message("Acces Denied" + Environment.NewLine + "Please run as adminstrator");
-                ms.Show();
+            catch (InvalidOperationException ex)
+            {
+                //MessageBox.Show("Cannot connect to server");
+            }
+            catch (Exception ex)
+            {
+                //MessageBox.Show("Cannot connect to server");
+            }
+            finally
+            {
+                //connection.Close();
             }
         }
-        //Event refresh, you can make this simply that mean enter current path and go it again
-        private void item_refresh_Click(object sender, EventArgs e)
+        //Connect database
+        private void btn_Connect_Click(object sender, EventArgs e)
         {
-            btn_Go.PerformClick();           
+            type = 0;
+            ReadData();
         }
-        //Event back & forward to previous path, because user can back many time, you can't use a temp variable like path_pre
-        //I think a good selection that is use 2 stack: one for back and one for forward  
-        private void btn_back_Click(object sender, EventArgs e)
+        //Read database
+        private void ReadData()
         {
             try
             {
-                path_stack2.Push(path_stack.Peek());
-                path_stack.Pop();
-                txt_path.Text = path_stack.Peek();
-                btn_Go_Click(sender, e);
-            }
-            catch (Exception) { }
-        }
-        //
-        private void btn_forward_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                path_stack.Push(path_stack2.Pop());
-                txt_path.Text = path_stack.Peek();
-                btn_Go_Click(sender, e);
-            }
-            catch (Exception) { }
-        }
-        //Event up, help you back to parent folder, i update a new path and go it for this function
-        //Current path will be push into stack 2
-        private void btn_up_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                if (txt_path.Text != "")
+                Connect();
+                SqlCommand command = open();
+                SqlDataReader reader = command.ExecuteReader();
+                dataGridView1.Rows.Clear();
+                //Read line by line
+                while (reader.HasRows)
                 {
-                    string[] sub_path = txt_path.Text.ToString().Split('\\');
-
-                    txt_path.Text = "";
-                    for (int i = 0; i < sub_path.Length - 2; i++)
-                    {
-                        txt_path.Text += sub_path[i] + "\\";
-                    }
+                    if (reader.Read() == false) return;
+                    dataGridView1.Rows.Add(reader.GetString(0), reader.GetString(1), reader.GetDateTime(2));
                 }
-                path_stack.Push(txt_path.Text);
-                btn_Go_Click(sender, e);
-
+                //command.Cancel();
+                reader.Close();
+                connection.Close();
             }
             catch (Exception) { }
         }
-        //
-        #endregion
-        //
-        #region other function
-        //Hack tip help me remove 'my computer' in current path 
-        private string CreatPath(string fullpath)
-        {
-            string selected_node_path = "";
-            string[] sub_path = fullpath.Split('\\');
-            selected_node_path += sub_path[1];
-            for (int i = 2; i < sub_path.Length; i++)
+        //Save function
+        private void btn_Save_Click(object sender, EventArgs e)
+        {    
+            if (type == 0)
             {
-                selected_node_path += sub_path[i] + "\\";
+                try
+                {
+                    Connect();
+                    if (index == 1)
+                    {
+                        insert();
+                    }
+                    if (index == 2)
+                    {
+                        update();
+                    }
+                    connection.Close();
+                    ReadData();
+                    index = 0;
+                }
+                catch (Exception) { }
+            }
+            if (type == 1)
+            {
+                FileStream fs = new FileStream("data.txt", FileMode.Open, FileAccess.Read, FileShare.Write);
+                StreamWriter writer = new StreamWriter("data.txt");
+                if (index == 2)
+                {
+                    int CurrentIndex = dataGridView1.CurrentRow.Index;
+                    string id = dataGridView1.Rows[CurrentIndex].Cells[0].Value.ToString();                  
+                    //Write line by line
+                    for (int i = 0; i < dataGridView1.Rows.Count - 1; i++)
+                    {
+                        if (dataGridView1.Rows[i].Cells[0].Value.ToString() == id)
+                        {
+                            writer.WriteLine(txt_masv.Text.ToString() + "," + txt_ten.Text.ToString() + "," + txt_ngsinh.Text.ToString());
+                        }
+                        else
+                        {
+                            writer.WriteLine(dataGridView1.Rows[i].Cells[0].Value + "," + dataGridView1.Rows[i].Cells[1].Value + "," + dataGridView1.Rows[i].Cells[2].Value);
+                        }
+                    }
+                    
+
+                }
+                if (index == 1)
+                {
+                    for (int i = 0; i < dataGridView1.Rows.Count - 1; i++)
+                    {                     
+                       writer.WriteLine(dataGridView1.Rows[i].Cells[0].Value + "," + dataGridView1.Rows[i].Cells[1].Value + "," + dataGridView1.Rows[i].Cells[2].Value);                   
+                    }
+                    writer.WriteLine(txt_masv.Text.ToString() + "," + txt_ten.Text.ToString() + "," + txt_ngsinh.Text.ToString());
+
+                }
+                writer.Dispose();
+                writer.Close();
+                fs.Close();
+                FileStream fs2 = new FileStream("data.txt", FileMode.Open, FileAccess.Read, FileShare.Read);
+                dataGridView1.Rows.Clear();
+                String value = ".";
+                StreamReader rd = new StreamReader(fs2);
+                while (true)
+                {
+                    //Read line by line
+                    value = rd.ReadLine();
+                    if (String.IsNullOrEmpty(value) == true) break;
+                    String[] col = value.Split(',');
+                    dataGridView1.Rows.Add(col[0], col[1], col[2]);
+                }
+                rd.Close();
+                index = 0;
+            }
+        }
+       
+        private void btn_Delete_Click(object sender, EventArgs e)
+        {
+            if (type == 0)
+            {
+                index = 0;
+                Connect();                
+                delete();
+                connection.Close();
+                ReadData();
+            }
+            else
+            {
+                FileStream fs = new FileStream("data.txt", FileMode.Open, FileAccess.Read, FileShare.Write);
+                StreamWriter writer = new StreamWriter("data.txt");
+                int CurrentIndex = dataGridView1.CurrentRow.Index;
+                string id = dataGridView1.Rows[CurrentIndex].Cells[0].Value.ToString();
+                for (int i = 0; i < dataGridView1.Rows.Count - 1; i++)
+                {
+                    if (dataGridView1.Rows[i].Cells[0].Value.ToString() != id)
+                    {
+                        writer.WriteLine(dataGridView1.Rows[i].Cells[0].Value + "," + dataGridView1.Rows[i].Cells[1].Value + "," + dataGridView1.Rows[i].Cells[2].Value);
+
+                    }
+                 
+                }
+                writer.Dispose();
+                writer.Close();
+                fs.Close();
+                FileStream fs2 = new FileStream("data.txt", FileMode.Open, FileAccess.Read, FileShare.Read);
+                dataGridView1.Rows.Clear();
+                String value = ".";
+                StreamReader rd = new StreamReader(fs2);
+                while (true)
+                {
+                    //Read line by line
+                    value = rd.ReadLine();
+                    if (String.IsNullOrEmpty(value) == true) break;
+                    String[] col = value.Split(',');
+                    dataGridView1.Rows.Add(col[0], col[1], col[2]);
+                }
+
+                index = 0;
             }
 
-            return selected_node_path;
         }
-        //
-        private void Form1_Load(object sender, EventArgs e)
+        private void btn_Add_Click(object sender, EventArgs e)
         {
-            txt_path.Width = this.Width - 100;
-            //Clear all node
-            if (treeView1 != null)
-            {
-                treeView1.Nodes.Clear();
-            }
-            //Add root node
-            TreeNode root_node = new TreeNode("My Computer", 4, 4);
-            this.treeView1.Nodes.Add(root_node);
-            //Add node
-            //List disk
-            ManagementObjectSearcher query = new ManagementObjectSearcher("Select * from Win32_LogicalDisk");
-            ManagementObjectCollection col = query.Get();
-            //Create node and add to root node
-            foreach (var disk in col)
-            {
-                TreeNode disk_node = new TreeNode(disk.GetPropertyValue("Name").ToString() + "\\",
-                    IconTreeView((disk["DriveType"].ToString())), IconTreeView((disk["DriveType"].ToString())));
-                root_node.Nodes.Add(disk_node);
-            }
-            //Show node_children
-
-            root_node.Expand();
+            index = 1;
+            txt_masv.Clear();
+            txt_ngsinh.Clear();
+            txt_ten.Clear();
         }
-        //
+        private void btn_Update_Click(object sender, EventArgs e)
+        {
+            index = 2;
+        }
+
+        private void dataGridView1_SelectionChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                int CurrentIndex = dataGridView1.CurrentRow.Index;
+                txt_masv.Text = dataGridView1.Rows[CurrentIndex].Cells[0].Value.ToString();
+                txt_ten.Text = dataGridView1.Rows[CurrentIndex].Cells[1].Value.ToString();
+                txt_ngsinh.Text = dataGridView1.Rows[CurrentIndex].Cells[2].Value.ToString();
+            }
+            catch (Exception) { }
+        }
+        private void button7_Click_1(object sender, EventArgs e)
+        {
+            Application.Exit();
+        }
+
         private void timer1_Tick(object sender, EventArgs e)
         {
-            lblTime.Text = (DateTime.Now.Hour < 10 ? "0" + DateTime.Now.Hour.ToString() : DateTime.Now.Hour.ToString())
-                + ":" + (DateTime.Now.Minute < 10 ? "0" + DateTime.Now.Minute.ToString() : DateTime.Now.Minute.ToString()) 
-                + ":" + (DateTime.Now.Second < 10 ? "0" + DateTime.Now.Second.ToString() : DateTime.Now.Second.ToString()) 
-                + " " + DateTime.Now.DayOfWeek.ToString() + ", " + (DateTime.Now.Day < 10 ? "0" 
-                + DateTime.Now.Day.ToString() : DateTime.Now.Day.ToString()) + "/" + (DateTime.Now.Month < 10 ? "0" 
-                + DateTime.Now.Month.ToString() : DateTime.Now.Month.ToString()) + "/" + DateTime.Now.Year;
-            if (listView1.Items.Count == 0)
+            if (txt_search.Text == "") btn_Search.Enabled = false;
+            else btn_Search.Enabled = true;
+            if (index == 0)
             {
-                background.Visible = true;
+                btn_Add.Enabled = true;
+                btn_Delete.Enabled = true;
+                btn_Update.Enabled = true;
+                btn_Save.Enabled = false;
+
+                txt_masv.Enabled = false;
+                txt_ngsinh.Enabled = false;
+                txt_ten.Enabled = false;
             }
-            else
+            if (index == 1)
             {
-                background.Visible = false;
-            }
              
-            if (txt_path.Text != "")
-            {
-                btn_up.Enabled = true;
-            }
-            else
-            {
-                btn_up.Enabled = false;
-            }
-            if (path_stack.Count != 0)
-            {
-                btn_back.Enabled = true;
-            }
-            else
-            {
-                btn_back.Enabled = false;
-            }
-            if (path_stack2.Count != 0)
-            {
-                btn_forward.Enabled = true;
-            }
-            else
-            {
-                btn_forward.Enabled = false;
-            }
-            if (listView1.Focused == true)
-            {
-                ct_open.Enabled = true;
-            }
-            else
-            {
-                ct_open.Enabled = false;
-            }
-        }      
-        //Event enter textbox path
-        private void txt_path_KeyPress(object sender, KeyPressEventArgs e)
-        {
-            if (e.KeyChar == 13) btn_Go.PerformClick();
-        }
-        //View function, i can do that, but i don't have enough time
-        private void item_view_Click_1(object sender, EventArgs e)
-        {
-            Message ms = new Message("This function is not supported now");
-            ms.Show();
-        }
-        //Event right click an item and select open
-        private void ct_open_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                ListViewItem item = listView1.FocusedItem;
-                string path = item.SubItems[4].Text;
-                FileInfo inf = new FileInfo(path);
-                if (inf.Exists)
-                {
-                    Process.Start(path);
-                    return;
-                }
-                DirectoryInfo inf2 = new DirectoryInfo(path + "\\");
+                btn_Add.Enabled = false;
+                btn_Delete.Enabled = false;
+                btn_Update.Enabled = false;
+                btn_Save.Enabled = true;
 
-                if (inf2.Exists)
-                {
-                    txt_path.Text = path + "\\";
-                    path_stack.Push(txt_path.Text);
-                    listView1.Items.Clear();
-                    DirectoryInfo[] subfolder_info = new DirectoryInfo(path).GetDirectories();
-                    AddFolderListView(subfolder_info);
-                    FileInfo[] subfile_info = new DirectoryInfo(path).GetFiles();
-                    AddFileListView(subfile_info);
-                }
-                else
-                {
-
-                }
+                txt_masv.Enabled = true;
+                txt_ngsinh.Enabled = true;
+                txt_ten.Enabled = true;
             }
-            catch (Exception) { }
-        }
-        //Event rename item
-        private void listView1_AfterLabelEdit(object sender, LabelEditEventArgs e)
-        {
-            try
+            if (index == 2)
             {
-                ListViewItem item = listView1.FocusedItem;
-                string path = item.SubItems[4].Text;
-                if (e.Label == null) return;
-                FileInfo fi = new FileInfo(path);
-                if (fi.Exists)
-                {
-                    FileSystem.RenameFile(path, e.Label + item.SubItems[1].Text);
-                    item_refresh_Click(sender, e);
+                btn_Add.Enabled = false;
+                btn_Delete.Enabled = false;
+                btn_Update.Enabled = false;
+                btn_Save.Enabled = true;
 
-                }
-                else
-                {
-                    FileSystem.RenameDirectory(path, e.Label);
-                    item_refresh_Click(sender, e);
-                    e.CancelEdit = true;
+                txt_masv.Enabled = false;
+                txt_ngsinh.Enabled = true;
+                txt_ten.Enabled = true;
 
-
-                }
-
-                item_refresh.PerformClick();
-               
             }
-            catch(IOException)
+            if (index == 3)
             {
-                //MessageBox.Show("Acces Denied");
-            }
-            catch(Exception)
-            {
+                btn_Add.Enabled = false;
+                btn_Delete.Enabled = false;
+                btn_Update.Enabled = false;
+                btn_Save.Enabled = true;
+
+                txt_masv.Enabled = false;
+                txt_ngsinh.Enabled = false;
+                txt_ten.Enabled = false;
 
             }
         }
-        //Update lbl count selected item(s) in status bar
-        private void listView1_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (listView1.SelectedItems.Count > 0)
-            {
-                lbl_selected.Text = listView1.SelectedItems.Count + " item(s) selected";
 
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            timer1.Start();
+        }
+
+        private void btn_Search_Click(object sender, EventArgs e)
+        {
+            if (type == 0)
+            {
+                btn_Connect.PerformClick();
+                String searchvalue = txt_search.Text.ToString();
+                int[] index = new int[50];
+                string[] id = new string[50];
+                string[] name = new string[50];
+                string[] day = new string[50];
+                int i = 0;
+                foreach (DataGridViewRow row in dataGridView1.Rows)
+                {
+                    try
+                    {
+                        if (row.Cells[1].Value.ToString().Equals(searchvalue) || row.Cells[0].Value.ToString().Equals(searchvalue))
+                        {
+                            id[i] = dataGridView1.Rows[row.Index].Cells[0].Value.ToString();
+                            name[i] = dataGridView1.Rows[row.Index].Cells[1].Value.ToString();
+                            day[i] = dataGridView1.Rows[row.Index].Cells[2].Value.ToString();
+                            i++;
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+
+                }
+                dataGridView1.Rows.Clear();
+                for (int j = 0; j < i; j++)
+                {
+                    dataGridView1.Rows.Add(id[j], name[j], day[j]);
+                }
+                connection.Close();
             }
             else
             {
-                lbl_selected.Text = "";
+                dataGridView1.Rows.Clear();
+                String value = ".";
+                FileStream fs = new FileStream("data.txt", FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                StreamReader rd = new StreamReader(fs);
+                while (true)
+                {
+                    //Read line by line
+                    value = rd.ReadLine();
+                    if (String.IsNullOrEmpty(value) == true) break;
+                    String[] col = value.Split(',');
+                    if (col[0] == txt_search.Text.ToString() || col[1] == txt_search.Text.ToString())
+                    {
+                        dataGridView1.Rows.Add(col[0], col[1], col[2]);
 
+                    }
+                }
+                rd.Close();
             }
-
-
         }
-        //
-        #endregion
-        //
+
+        private void btn_cnt_file_Click(object sender, EventArgs e)
+        {
+            type = 1;
+            dataGridView1.Rows.Clear();
+            String value = ".";
+            FileStream fs = new FileStream("data.txt", FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            StreamReader rd = new StreamReader(fs);
+            while (true)
+            {
+                //Read line by line
+                value = rd.ReadLine();
+                if (String.IsNullOrEmpty(value) == true) break;
+                String[] col = value.Split(',');
+                dataGridView1.Rows.Add(col[0], col[1], col[2]);
+            }
+            rd.Close();
+        }
+
+      
     }
 }
